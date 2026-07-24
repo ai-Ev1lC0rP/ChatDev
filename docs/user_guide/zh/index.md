@@ -7,6 +7,7 @@
 | 主题 | 内容提要                                                      |
 | --- |-----------------------------------------------------------|
 | [Web UI 快速入门](web_ui_guide.md) | 前端界面操作、工作流执行、人工审阅、故障排查                                  |
+| [模型接入引导（OmniRoute）](model_onboarding.md) | 通过 OmniRoute 或其他厂商配置 `BASE_URL` / `API_KEY`（`make onboard-models`） |
 | [工作流编排](workflow_authoring.md) | YAML 结构、节点类型、Provider/边条件、设计模板导出、CLI 运行                   |
 | [图执行逻辑](execution_logic.md) | DAG/循环图执行策略、Tarjan 环路检测、超级节点构建、递归式环路执行                   |
 | [Dynamic 并行执行](dynamic_execution.md) | Map/Tree 模式、Split 拆分策略、并行处理与层级归约                          |

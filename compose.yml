@@ -13,6 +13,8 @@ services:
       - .env
       - .env.docker
     restart: unless-stopped
+    # When using profile omniroute, point BASE_URL at the gateway service
+    # (set in .env): BASE_URL=http://omniroute:20128/v1
 
   frontend:
     build:
@@ -31,3 +33,20 @@ services:
     depends_on:
       - backend
     restart: unless-stopped
+
+  # Optional multi-provider AI gateway for model onboarding.
+  # Start with: docker compose --profile omniroute up -d
+  # Then: make onboard-models ONBOARD_ARGS='--provider omniroute --yes'
+  # Host dashboard: http://localhost:20128
+  omniroute:
+    profiles: ["omniroute"]
+    image: diegosouzapw/omniroute:latest
+    container_name: chatdev_omniroute
+    ports:
+      - "${OMNIROUTE_PORT:-20128}:20128"
+    volumes:
+      - omniroute-data:/app/data
+    restart: unless-stopped
+
+volumes:
+  omniroute-data:

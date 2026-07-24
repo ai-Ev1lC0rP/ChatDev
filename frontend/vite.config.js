@@ -10,6 +10,7 @@ export default defineConfig(({ mode }) => {
     plugins: [vue()],
     server: {
       host: true,
+      allowedHosts: ['.casonclark.com'],
       proxy: {
         '/api': {
           target: target,

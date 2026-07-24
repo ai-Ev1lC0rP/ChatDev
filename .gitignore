@@ -1,6 +1,15 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
+*$py.class
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+.coverage
+htmlcov/
+dist/
+build/
 
 # Virtual environments
 .venv/
@@ -9,22 +18,35 @@ env/
 
 # uv
 .uv-cache/
+uv-cache/
 
-# IDEs
+# IDEs / editors
 .idea/
 .vscode/
 frontend/.vscode/
+.cursor/**
+!.cursor/rules/
+!.cursor/rules/**
+*.swp
+*.swo
 
 # OS
 .DS_Store
+Thumbs.db
 
-# Environment
+# Environment / secrets
 .env
+.env.local
+.env.*.local
+!.env.example
 
 # Project Specific
 logs/
+*.log
 node_modules/
 data/
 temp/
+tmp/
 WareHouse/
+frontend/dist/
 

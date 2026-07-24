@@ -33,6 +33,7 @@ from server.services.attachment_service import AttachmentService
         ("..", "upload.bin"),
         (".", "upload.bin"),
         ("   ", "upload.bin"),
+        ("evil\x00name.txt", "evilname.txt"),
     ],
 )
 def test_safe_upload_filename_strips_directory_components(raw, expected):
