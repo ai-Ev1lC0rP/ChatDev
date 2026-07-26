@@ -5,12 +5,26 @@ import vue from '@vitejs/plugin-vue'
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '')
   const target = env.VITE_API_BASE_URL || 'http://localhost:6400'
+  // Set VITE_HMR_CLIENT_PORT=443 when serving through an HTTPS reverse proxy
+  // so the browser stays on wss://<public-host>:443 instead of localhost:5173.
+  const hmrClientPort = env.VITE_HMR_CLIENT_PORT
+    ? Number(env.VITE_HMR_CLIENT_PORT)
+    : undefined
 
   return {
     plugins: [vue()],
     server: {
       host: true,
-      allowedHosts: ['.casonclark.com'],
+      // Allow chatdev/bit/chat-dev.casonclark.com (and any other reverse-proxy host)
+      allowedHosts: true,
+      ...(hmrClientPort
+        ? {
+            hmr: {
+              protocol: 'wss',
+              clientPort: hmrClientPort,
+            },
+          }
+        : {}),
       proxy: {
         '/api': {
           target: target,
