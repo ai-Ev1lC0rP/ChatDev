@@ -7,6 +7,7 @@ This landing page helps operators, workflow authors, and extension developers fi
 | Topic | Highlights |
 | --- | --- |
 | [Web UI Quick Start](web_ui_guide.md) | Frontend interface operations, workflow execution, human review, troubleshooting. |
+| [Model Onboarding (OmniRoute)](model_onboarding.md) | Configure `BASE_URL` / `API_KEY` via OmniRoute or other providers (`make onboard-models`). |
 | [Workflow Authoring](workflow_authoring.md) | YAML structure, node types, provider/edge conditions, template export, CLI execution. |
 | [Graph Execution Logic](execution_logic.md) | DAG/cyclic graph execution, Tarjan cycle detection, super node construction, recursive cycle execution. |
 | [Dynamic Parallel Execution](dynamic_execution.md) | Map/Tree modes, split strategies, parallel processing and hierarchical reduction. |

@@ -125,9 +125,23 @@ See our paper in [Multi-Agent Collaboration via Evolving Orchestration](https://
 *   **Environment Variables**:
     ```bash
     cp .env.example .env
+    # or: make setup-env
     ```
-*   **Model Keys**: Set `API_KEY` and `BASE_URL` in `.env` for your LLM provider.
+*   **Model setup (onboarding)**: Configure the LLM endpoint used by agent YAML (`${BASE_URL}` / `${API_KEY}`):
+    ```bash
+    make onboard-models
+    ```
+    Recommended path: **[OmniRoute](https://github.com/diegosouzapw/OmniRoute)** — a local OpenAI-compatible gateway that routes across many providers.
+    ```bash
+    make omniroute-up          # start gateway (Docker)
+    make onboard-models ONBOARD_ARGS='--provider omniroute --yes'
+    # Open http://localhost:20128 → Endpoints → create API key, then:
+    make onboard-models ONBOARD_ARGS='--provider omniroute --api-key YOUR_KEY --yes'
+    make omniroute-status
+    ```
+    Non-interactive presets also include `ollama`, `openai`, `gemini`, `lmstudio`, and `custom`.
 *   **YAML placeholders**: Use `${VAR}`（e.g., `${API_KEY}`）in configuration files to reference these variables.
+*   With OmniRoute, agent `model` can be set to `auto` for smart routing.
 
 ### ⚡️ Run the Application
 
