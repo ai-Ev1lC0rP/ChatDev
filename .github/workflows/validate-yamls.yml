@@ -11,6 +11,7 @@ on:
   push:
     branches:
       - main
+      - upstream-sync
     paths:
       - 'yaml_instance/**/*.yaml'
       - '.github/workflows/**/*.yml'
