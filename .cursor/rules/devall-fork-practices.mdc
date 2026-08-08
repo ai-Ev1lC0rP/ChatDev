@@ -1,0 +1,38 @@
+---
+description: ChatDev 2.0 (DevAll) fork workflow, security, and local-dev best practices
+alwaysApply: true
+---
+
+# ChatDev / DevAll Fork Practices
+
+This repo is a fork of OpenBMB/ChatDev tracking **ChatDev 2.0 (DevAll)** on `upstream-sync`. Legacy ChatDev 1.0 lives only on stale `origin/main` history — do not revive 1.0 patterns (`CompanyConfig` chat chains as the primary product surface).
+
+## Branch & remotes
+
+- Work on `upstream-sync` (or feature branches cut from it).
+- `upstream` → `https://github.com/OpenBMB/ChatDev.git` (source of truth for DevAll).
+- Prefer HTTPS for GitHub ops when SSH keys are unavailable (`gh` auth / HTTPS remotes).
+- Sync with: `make sync-upstream` (or `git fetch upstream && git merge upstream/main`).
+- Never force-push `main`/`upstream-sync` unless the user explicitly requests it.
+- Do not commit `.env`, `WareHouse/`, `.cursor/` hook state, or secrets.
+
+## Local development
+
+- Python 3.12 + `uv`; frontend is Vite + Vue 3.
+- Bootstrap: `make setup` → `make onboard-models` (or Ollama/OmniRoute presets) → `make dev`.
+- Default local LLM: Ollama at `http://localhost:11434/v1` (`API_KEY=ollama`). Prefer the model installed on this machine (e.g. `gpt-oss:20b`).
+- OmniRoute is the recommended multi-provider gateway (`make omniroute-up`, port 20128).
+- YAML workflows must use `${BASE_URL}` / `${API_KEY}` placeholders — never hardcode keys.
+- Validate before claiming done: `make check` (YAML + path-safety + onboarding tests).
+
+## Security
+
+- Treat upload filenames and `session_id` path segments as attacker-controlled.
+- Keep basename-only filename sanitization and opaque `session_id` validation in `AttachmentService`.
+- Prefer standard nodes/workflows over ad-hoc Code nodes when extending orchestration.
+- Do not add exploit PoCs; regression tests for defensive sanitization are required when touching upload/session paths.
+
+## Product direction
+
+- Prefer zero-code YAML workflows under `yaml_instance/` + Web Console over rewriting the runtime.
+- Extend via agents, tools, MCP, and workflow YAML; keep diffs minimal and validated.
