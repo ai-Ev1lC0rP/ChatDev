@@ -3,6 +3,7 @@
 import logging
 import mimetypes
 import os
+import re
 import shutil
 import tempfile
 from pathlib import Path
@@ -12,6 +13,8 @@ from fastapi import UploadFile
 
 from entity.messages import MessageBlock, MessageBlockType
 from utils.attachments import AttachmentStore, AttachmentRecord
+
+_SESSION_ID_RE = re.compile(r"^[a-zA-Z0-9_-]+$")
 
 
 class AttachmentService:
@@ -44,6 +47,22 @@ class AttachmentService:
         return AttachmentStore(path)
 
     @staticmethod
+    def _safe_session_id(raw: Optional[str]) -> str:
+        """Accept only opaque session tokens safe for directory names.
+
+        ``session_id`` is interpolated into WareHouse paths. Reject traversal
+        and separator characters the same way download routes already do.
+        """
+        candidate = (raw or "").strip()
+        if candidate.startswith("session_"):
+            candidate = candidate[len("session_") :]
+        if not candidate or not _SESSION_ID_RE.fullmatch(candidate):
+            raise ValueError(
+                "Invalid session_id: only letters, digits, underscores, and hyphens are allowed"
+            )
+        return candidate
+
+    @staticmethod
     def _safe_upload_filename(raw: Optional[str]) -> str:
         """Reduce a client-supplied upload filename to a safe basename.
 
@@ -54,13 +73,18 @@ class AttachmentService:
         file write and delete. Normalise both POSIX and Windows separators and
         keep only the final path component so the write stays confined.
         """
-        candidate = os.path.basename((raw or "").replace("\\", "/")).strip()
+        candidate = os.path.basename(
+            (raw or "").replace("\x00", "").replace("\\", "/")
+        ).strip()
         if not candidate or candidate in {".", ".."}:
             return "upload.bin"
+        # TODO(security): consider rejecting control chars / overly long names after
+        # basename normalisation (basename + null-strip already blocks traversal).
         return candidate
 
     async def save_upload_file(self, session_id: str, upload: UploadFile) -> AttachmentRecord:
         filename = self._safe_upload_filename(upload.filename)
+        safe_session = self._safe_session_id(session_id)
         temp_dir = Path(tempfile.mkdtemp(prefix="mac_upload_"))
         temp_path = temp_dir / filename
         try:
@@ -70,7 +94,7 @@ class AttachmentService:
                     if not chunk:
                         break
                     buffer.write(chunk)
-            store = self.get_attachment_store(session_id)
+            store = self.get_attachment_store(safe_session)
             mime_type = upload.content_type or mimetypes.guess_type(filename)[0]
             record = store.register_file(
                 temp_path,
@@ -80,7 +104,7 @@ class AttachmentService:
                 extra={
                     "source": "user_upload",
                     "origin": "web_upload",
-                    "session_id": session_id,
+                    "session_id": safe_session,
                 },
             )
             return record
@@ -123,8 +147,13 @@ class AttachmentService:
         return store.export_manifest()
 
     def _session_attachments_path(self, session_id: str, *, create: bool = True) -> Optional[Path]:
-        session_dir_name = session_id if session_id.startswith("session_") else f"session_{session_id}"
+        safe_id = self._safe_session_id(session_id)
+        session_dir_name = f"session_{safe_id}"
         path = self.attachments_root / session_dir_name / "code_workspace" / "attachments"
+        root = self.attachments_root.resolve()
+        resolved = path.resolve()
+        if root != resolved and root not in resolved.parents:
+            raise ValueError("Session attachment path escaped WareHouse root")
         if create:
             path.mkdir(parents=True, exist_ok=True)
             return path
