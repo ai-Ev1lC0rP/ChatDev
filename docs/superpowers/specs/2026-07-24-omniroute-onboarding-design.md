@@ -77,6 +77,6 @@ No rewrite of agent providers: ChatDev already speaks OpenAI-compatible HTTP via
 
 ## Follow-ups
 
-<!-- TODO(fork-dx): proposed 3-PR split (OmniRoute onboarding / path-safety /
-     fork DX+proxy) was drafted but not user-approved — do not open split PRs
-     until that plan is accepted; work currently lands on upstream-sync. -->
+<!-- TODO(fork-dx): 3-PR split is live vs pr-base/devall-pre-omniroute —
+     #1 path-safety, #2 OmniRoute onboarding, #3 fork DX (merged). Keep
+     upstream-sync reconcile after #1→#2; see 2026-08-08-omniroute-works-well-plan.md -->
