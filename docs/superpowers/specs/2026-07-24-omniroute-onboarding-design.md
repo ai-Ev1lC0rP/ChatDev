@@ -74,3 +74,9 @@ No rewrite of agent providers: ChatDev already speaks OpenAI-compatible HTTP via
 - Embedding OmniRoute source into ChatDev
 - Changing every YAML demo to `model: auto`
 - Committing real API keys
+
+## Follow-ups
+
+<!-- TODO(fork-dx): 3-PR split is live vs pr-base/devall-pre-omniroute —
+     #1 path-safety, #2 OmniRoute onboarding, #3 fork DX (merged). Keep
+     upstream-sync reconcile after #1→#2; see 2026-08-08-omniroute-works-well-plan.md -->

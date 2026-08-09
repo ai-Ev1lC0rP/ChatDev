@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""ChatDev model onboarding — configure LLM provider env for agents.
+"""ChatDev model onboarding — connect agents to an LLM provider.
 
-Primary path: OmniRoute as the multi-provider OpenAI-compatible gateway.
-Also supports direct Ollama / OpenAI / Gemini / LM Studio / custom presets.
+Recommended path: OmniRoute (one local gateway → many cloud/local providers).
+Also supports direct Ollama / OpenAI / Gemini / LM Studio / custom endpoints.
 
 Usage:
   uv run python tools/onboard_models.py
@@ -60,54 +60,55 @@ class ProviderPreset:
 PROVIDERS: dict[str, ProviderPreset] = {
     "omniroute": ProviderPreset(
         key="omniroute",
-        label="OmniRoute (recommended) — multi-provider gateway",
+        label="OmniRoute (recommended) — one gateway for many providers",
         base_url=DEFAULT_OMNIROUTE_BASE_URL,
         default_api_key="YOUR_OMNIROUTE_API_KEY",
         default_model="auto",
         notes=(
-            "Start gateway: make omniroute-up  |  Dashboard: "
-            f"{DEFAULT_OMNIROUTE_DASHBOARD}  |  Create API key under Endpoints, then re-run with --api-key"
+            "Next steps: (1) make omniroute-up  "
+            f"(2) open {DEFAULT_OMNIROUTE_DASHBOARD} → Endpoints → create an API key  "
+            "(3) re-run with --api-key YOUR_KEY"
         ),
     ),
     "ollama": ProviderPreset(
         key="ollama",
-        label="Ollama (local)",
+        label="Ollama — models running on this machine",
         base_url="http://localhost:11434/v1",
         default_api_key="ollama",
         default_model="gpt-oss:20b",
-        notes="Requires Ollama running locally with a pulled model.",
+        notes="Start Ollama and pull a model first (e.g. ollama pull gpt-oss:20b).",
     ),
     "openai": ProviderPreset(
         key="openai",
-        label="OpenAI",
+        label="OpenAI — cloud API",
         base_url="https://api.openai.com/v1",
         default_api_key="sk-your-openai-api-key-here",
         default_model="gpt-4o",
-        notes="Requires a real OpenAI API key.",
+        notes="Paste a real OpenAI API key (sk-…).",
     ),
     "gemini": ProviderPreset(
         key="gemini",
-        label="Google Gemini",
+        label="Google Gemini — cloud API",
         base_url="https://generativelanguage.googleapis.com",
         default_api_key="your-gemini-api-key-here",
         default_model="gemini-2.0-flash",
-        notes="Requires a Gemini API key.",
+        notes="Paste a real Gemini API key.",
     ),
     "lmstudio": ProviderPreset(
         key="lmstudio",
-        label="LM Studio (local)",
+        label="LM Studio — models running on this machine",
         base_url="http://localhost:1234/v1",
         default_api_key="lm-studio",
         default_model="local-model",
-        notes="Requires LM Studio local server enabled.",
+        notes="Turn on LM Studio’s local server, then match the model name it shows.",
     ),
     "custom": ProviderPreset(
         key="custom",
-        label="Custom OpenAI-compatible endpoint",
+        label="Custom — any OpenAI-compatible URL",
         base_url="http://localhost:8000/v1",
         default_api_key="YOUR_API_KEY",
         default_model="default",
-        notes="Any OpenAI-compatible BASE_URL + API_KEY.",
+        notes="Point BASE_URL at your server’s /v1 endpoint and set API_KEY as required.",
     ),
 }
 
@@ -133,23 +134,21 @@ def upsert_env_vars(path: Path, updates: dict[str, str]) -> list[str]:
             new_lines.append(line)
             continue
         key = match.group("key")
-        if key in updates:
-            prefix = match.group("prefix")
-            new_lines.append(f"{prefix}{key}={updates[key]}")
-            seen.add(key)
-            if match.group("value").strip().strip("\"'") != updates[key]:
-                changed.append(key)
-            else:
-                changed.append(key)  # still report touched keys for clarity
-        else:
+        if key not in updates:
             new_lines.append(line)
+            continue
+        # Touched keys are always reported, even when the value is unchanged.
+        new_lines.append(f"{match.group('prefix')}{key}={updates[key]}")
+        seen.add(key)
+        changed.append(key)
 
     for key, value in updates.items():
-        if key not in seen:
-            if new_lines and new_lines[-1].strip():
-                new_lines.append("")
-            new_lines.append(f"{key}={value}")
-            changed.append(key)
+        if key in seen:
+            continue
+        if new_lines and new_lines[-1].strip():
+            new_lines.append("")
+        new_lines.append(f"{key}={value}")
+        changed.append(key)
 
     path.write_text("\n".join(new_lines) + "\n", encoding="utf-8")
     return changed
@@ -208,7 +207,7 @@ def apply_provider(
     }
     ensure_env_file(env_path)
     changed = upsert_env_vars(env_path, updates)
-    print(f"Updated {env_path.name}: {', '.join(changed)}")
+    print(f"Saved to {env_path.name}: {', '.join(changed)}")
     return updates
 
 
@@ -219,63 +218,76 @@ def maybe_start_omniroute(*, start: bool, port: int) -> None:
         msg = start_gateway_docker(port=port)
         print(msg)
     except RuntimeError as exc:
-        print(f"Could not start OmniRoute via Docker: {exc}")
-        print("Fallback: npx -y omniroute   (dashboard on port 20128)")
+        print(f"Could not start OmniRoute with Docker: {exc}")
+        print("Try instead: npx -y omniroute   (dashboard on port 20128)")
 
 
+# TODO(onboarding): optionally exit non-zero when a real API key is set but
+# /models still fails (auth/config error), once callers agree hard-fail is OK.
 def verify_provider(
     provider_key: str,
     *,
     base_url: str,
     api_key: str,
 ) -> int:
+    """Advisory OmniRoute probe. Always returns 0 so env writes remain successful."""
     if provider_key != "omniroute":
-        print("Skipping live probe for non-OmniRoute providers.")
+        print("Skipped live check (only OmniRoute is probed automatically).")
         return 0
 
-    key = None if api_key in PLACEHOLDER_API_KEYS else api_key
-    status = probe_gateway(base_url=base_url, api_key=key)
+    probe_key = None if api_key in PLACEHOLDER_API_KEYS else api_key
+    status = probe_gateway(base_url=base_url, api_key=probe_key)
     print(
-        f"OmniRoute probe: reachable={status.reachable} models_ok={status.models_ok} "
+        f"OmniRoute check: reachable={status.reachable} models_ok={status.models_ok} "
         f"models={status.model_count} docker={status.docker_running} ({status.detail})"
     )
     if not status.reachable:
         print(
-            "Gateway not reachable yet. Run: make omniroute-up\n"
-            f"Then open {omniroute_dashboard_url()} → Endpoints to create an API key."
+            "OmniRoute is not reachable yet.\n"
+            "  Next: make omniroute-up\n"
+            f"  Then open {omniroute_dashboard_url()} → Endpoints → create an API key."
         )
-        return 0  # env was still written; not a hard failure
-    if not status.models_ok and key is None:
+    elif not status.models_ok and probe_key is None:
         print(
-            "Gateway is up. Paste your OmniRoute API key:\n"
-            f"  uv run python tools/onboard_models.py --provider omniroute --api-key <KEY> --yes"
+            "OmniRoute is up — finish setup with your API key:\n"
+            "  uv run python tools/onboard_models.py --provider omniroute --api-key <KEY> --yes"
         )
-        return 0
-    return 0 if status.models_ok or status.reachable else 1
+    elif status.models_ok:
+        print("OmniRoute looks ready. Agents can use ${BASE_URL} / ${API_KEY}.")
+    return 0
 
 
 def interactive(args: argparse.Namespace) -> int:
-    print("ChatDev model onboarding")
-    print("Configure BASE_URL / API_KEY used by agent YAML (${BASE_URL}, ${API_KEY}).\n")
+    print("ChatDev model setup")
+    print("Agents call models through BASE_URL + API_KEY in your .env.")
+    print("Recommended: OmniRoute — one local gateway that can reach many providers.\n")
+
     keys = list(PROVIDERS.keys())
     labels = [PROVIDERS[k].label for k in keys]
-    choice_label = prompt_choice("Choose a model provider:", labels, PROVIDERS["omniroute"].label)
+    choice_label = prompt_choice(
+        "Step 1 — Where should models come from?",
+        labels,
+        PROVIDERS["omniroute"].label,
+    )
     provider_key = keys[labels.index(choice_label)]
     provider = PROVIDERS[provider_key]
 
-    base_url = prompt_value("BASE_URL", provider.base_url)
-    api_key = prompt_value("API_KEY", provider.default_api_key)
-    model = prompt_value("DEFAULT_MODEL (for docs / reference)", provider.default_model)
+    print("\nStep 2 — Confirm connection details (press Enter to keep defaults)")
+    base_url = prompt_value("Endpoint URL (BASE_URL)", provider.base_url)
+    api_key = prompt_value("API key (API_KEY)", provider.default_api_key)
+    model = prompt_value("Default model name (reference only)", provider.default_model)
 
     start = False
     if provider_key == "omniroute":
-        start_ans = input("Start OmniRoute via Docker now? [y/N]: ").strip().lower()
+        print("\nStep 3 — Start the OmniRoute gateway (optional)")
+        start_ans = input("Start OmniRoute with Docker now? [y/N]: ").strip().lower()
         start = start_ans in {"y", "yes"}
 
     maybe_start_omniroute(start=start, port=args.port)
     if provider_key == "omniroute":
         base_url = omniroute_base_url(args.port) if "localhost:20128" in base_url else base_url
 
+    print("\nSaving…")
     apply_provider(
         provider,
         base_url=base_url,
@@ -283,13 +295,16 @@ def interactive(args: argparse.Namespace) -> int:
         model=model,
         env_path=Path(args.env_file),
     )
-    print(f"\nNotes: {provider.notes}")
+    print(f"\n{provider.notes}")
     return verify_provider(provider_key, base_url=base_url, api_key=api_key)
 
 
 def noninteractive(args: argparse.Namespace) -> int:
     if not args.provider:
-        print("Error: --provider is required with --yes (non-interactive).", file=sys.stderr)
+        print(
+            "Error: with --yes, pass --provider (try: omniroute).",
+            file=sys.stderr,
+        )
         return 2
     if args.provider not in PROVIDERS:
         print(f"Unknown provider: {args.provider}", file=sys.stderr)
@@ -310,22 +325,27 @@ def noninteractive(args: argparse.Namespace) -> int:
         model=model,
         env_path=Path(args.env_file),
     )
-    print(f"Notes: {provider.notes}")
+    print(provider.notes)
     if args.skip_verify:
         return 0
     return verify_provider(args.provider, base_url=base_url, api_key=api_key)
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="ChatDev model onboarding (OmniRoute-first)")
+    parser = argparse.ArgumentParser(
+        description=(
+            "ChatDev model setup — OmniRoute-first. "
+            "Writes BASE_URL / API_KEY into .env for agent workflows."
+        )
+    )
     parser.add_argument(
         "--provider",
         choices=sorted(PROVIDERS.keys()),
-        help="Provider preset (required with --yes)",
+        help="Provider preset (required with --yes; default path: omniroute)",
     )
-    parser.add_argument("--base-url", help="Override BASE_URL")
-    parser.add_argument("--api-key", help="Override API_KEY")
-    parser.add_argument("--model", help="Override DEFAULT_MODEL")
+    parser.add_argument("--base-url", help="Override endpoint URL (BASE_URL)")
+    parser.add_argument("--api-key", help="Override API key (API_KEY)")
+    parser.add_argument("--model", help="Override default model name")
     parser.add_argument(
         "--env-file",
         default=str(ENV_PATH),
@@ -335,23 +355,23 @@ def build_parser() -> argparse.ArgumentParser:
         "--port",
         type=int,
         default=DEFAULT_OMNIROUTE_PORT,
-        help="OmniRoute port (default 20128)",
+        help="OmniRoute port (default: 20128)",
     )
     parser.add_argument(
         "--start",
         action="store_true",
-        help="Start OmniRoute via Docker when provider=omniroute",
+        help="Start OmniRoute with Docker when provider=omniroute",
     )
     parser.add_argument(
         "--yes",
         "-y",
         action="store_true",
-        help="Non-interactive mode",
+        help="Non-interactive mode (no prompts)",
     )
     parser.add_argument(
         "--skip-verify",
         action="store_true",
-        help="Skip live OmniRoute probe",
+        help="Skip the live OmniRoute connectivity check",
     )
     parser.add_argument(
         "--list",
@@ -366,11 +386,13 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
 
     if args.list:
+        print("Available providers (OmniRoute recommended):\n")
         for key, preset in PROVIDERS.items():
             print(f"{key}: {preset.label}")
             print(f"  BASE_URL={preset.base_url}")
             print(f"  DEFAULT_MODEL={preset.default_model}")
             print(f"  {preset.notes}")
+            print()
         return 0
 
     if args.yes:

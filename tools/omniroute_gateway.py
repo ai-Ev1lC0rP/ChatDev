@@ -1,8 +1,9 @@
-"""OmniRoute gateway helpers for ChatDev model onboarding.
+"""OmniRoute OpenAI-compatible gateway helpers for ChatDev model onboarding.
 
-OmniRoute (https://github.com/diegosouzapw/OmniRoute) is an OpenAI-compatible
-local AI gateway. ChatDev agents already use BASE_URL + API_KEY, so pointing
-those at OmniRoute is the integration surface.
+OmniRoute (https://github.com/diegosouzapw/OmniRoute) is a local AI gateway that
+exposes an OpenAI-compatible `/v1` API. ChatDev agents already read BASE_URL and
+API_KEY, so pointing those at OmniRoute is the integration surface — not a
+ChatDev 1.0 chat-chain / CompanyConfig path.
 """
 
 from __future__ import annotations
@@ -20,8 +21,12 @@ DEFAULT_OMNIROUTE_PORT = 20128
 DEFAULT_OMNIROUTE_BASE_URL = f"http://localhost:{DEFAULT_OMNIROUTE_PORT}/v1"
 DEFAULT_OMNIROUTE_DASHBOARD = f"http://localhost:{DEFAULT_OMNIROUTE_PORT}"
 DOCKER_IMAGE = "diegosouzapw/omniroute:latest"
-DOCKER_CONTAINER = "chatdev-omniroute"
-DOCKER_VOLUME = "chatdev-omniroute-data"
+
+# Compose is source of truth (compose.yml): container_name + volumes.*.name.
+# Make omniroute-up/down use `docker compose --profile omniroute`; these
+# constants keep probe/status (and optional docker-run fallback) aligned.
+DOCKER_CONTAINER = "chatdev_omniroute"
+DOCKER_VOLUME = "chatdev_omniroute_data"
 
 
 @dataclass(frozen=True)
@@ -51,6 +56,7 @@ def _http_json(
     headers = {"Accept": "application/json"}
     if api_key:
         headers["Authorization"] = f"Bearer {api_key}"
+
     req = urllib.request.Request(url, headers=headers, method="GET")
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -80,13 +86,7 @@ def docker_container_running(name: str = DOCKER_CONTAINER) -> bool:
         return False
     try:
         result = subprocess.run(
-            [
-                "docker",
-                "inspect",
-                "-f",
-                "{{.State.Running}}",
-                name,
-            ],
+            ["docker", "inspect", "-f", "{{.State.Running}}", name],
             capture_output=True,
             text=True,
             check=False,
@@ -103,8 +103,10 @@ def probe_gateway(
     api_key: str | None = None,
     timeout: float = 5.0,
 ) -> GatewayStatus:
+    """Probe OpenAI-compatible GET {base_url}/models and Docker container state."""
     models_url = base_url.rstrip("/") + "/models"
     docker_running = docker_container_running()
+
     try:
         status, payload = _http_json(models_url, api_key=api_key, timeout=timeout)
     except ConnectionError as exc:
@@ -117,13 +119,16 @@ def probe_gateway(
             docker_running=docker_running,
         )
 
-    if status == 401 or status == 403:
+    if status in {401, 403}:
         return GatewayStatus(
             reachable=True,
             base_url=base_url,
             models_ok=False,
             model_count=None,
-            detail=f"gateway up but auth failed (HTTP {status}); set API_KEY from Dashboard → Endpoints",
+            detail=(
+                f"gateway up but auth failed (HTTP {status}); "
+                "set API_KEY from Dashboard → Endpoints"
+            ),
             docker_running=docker_running,
         )
 
@@ -137,14 +142,15 @@ def probe_gateway(
             docker_running=docker_running,
         )
 
-    count: int | None = None
+    model_count: int | None = None
     if isinstance(payload, dict) and isinstance(payload.get("data"), list):
-        count = len(payload["data"])
+        model_count = len(payload["data"])
+
     return GatewayStatus(
         reachable=True,
         base_url=base_url,
         models_ok=True,
-        model_count=count,
+        model_count=model_count,
         detail="ok",
         docker_running=docker_running,
     )
@@ -163,7 +169,7 @@ def start_gateway_docker(
     if docker_container_running(container):
         return f"OmniRoute container '{container}' already running on port {port}"
 
-    # Reuse stopped container if it exists
+    # Reuse a stopped container with the shared compose-aligned name.
     inspect = subprocess.run(
         ["docker", "inspect", container],
         capture_output=True,
@@ -180,9 +186,13 @@ def start_gateway_docker(
             timeout=60,
         )
         if start.returncode != 0:
-            raise RuntimeError(start.stderr.strip() or start.stdout.strip() or "docker start failed")
+            raise RuntimeError(
+                start.stderr.strip() or start.stdout.strip() or "docker start failed"
+            )
         return f"Started existing OmniRoute container '{container}'"
 
+    # TODO(omniroute): after docker-run fallback, wait/retry probe_gateway until
+    # /v1/models responds (or auth challenge) before returning success.
     run = subprocess.run(
         [
             "docker",
@@ -213,6 +223,7 @@ def start_gateway_docker(
 def stop_gateway_docker(container: str = DOCKER_CONTAINER) -> str:
     if not docker_available():
         raise RuntimeError("Docker not found")
+
     result = subprocess.run(
         ["docker", "stop", container],
         capture_output=True,
@@ -221,7 +232,9 @@ def stop_gateway_docker(container: str = DOCKER_CONTAINER) -> str:
         timeout=60,
     )
     if result.returncode != 0:
-        raise RuntimeError(result.stderr.strip() or result.stdout.strip() or "docker stop failed")
+        raise RuntimeError(
+            result.stderr.strip() or result.stdout.strip() or "docker stop failed"
+        )
     return f"Stopped OmniRoute container '{container}'"
 
 

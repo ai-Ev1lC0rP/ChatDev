@@ -1,44 +1,97 @@
-# 模型接入引导（OmniRoute）
+# 模型接入引导
 
-ChatDev Agent 通过 OpenAI 兼容的 `BASE_URL` + `API_KEY` 环境变量调用大模型。模型接入引导会将这些值写入 `.env`。
+Agent 通过 OpenAI 兼容的 `BASE_URL` + `API_KEY` 调用大模型。  
+接入引导将这些值写入 `.env`，供 YAML 使用 `${BASE_URL}` / `${API_KEY}`。
 
-## 推荐：OmniRoute
+---
 
-[OmniRoute](https://github.com/diegosouzapw/OmniRoute) 是本地 AI 网关。ChatDev 指向其 `/v1` API，由 OmniRoute 负责多厂商路由、免费额度与回退。
+## 路径：优先 OmniRoute
 
-| 项 | 值 |
-|------|--------|
+[OmniRoute](https://github.com/diegosouzapw/OmniRoute) 是推荐的本地网关：统一 `/v1` 端点，多厂商路由、免费额度与回退。
+
+| | |
+|---|---|
 | 控制台 | http://localhost:20128 |
 | API | http://localhost:20128/v1 |
-| 建议模型名 | `auto` |
+| 模型 | `auto` |
 
-### 步骤
+---
 
-1. `make setup`
-2. `make omniroute-up`（或 `docker compose --profile omniroute up -d` / `npx -y omniroute`）
-3. `make onboard-models`（选择 OmniRoute）  
-   非交互：`make onboard-models ONBOARD_ARGS='--provider omniroute --yes'`
-4. 打开控制台 → **Endpoints** → 创建 API Key
-5. `make onboard-models ONBOARD_ARGS='--provider omniroute --api-key YOUR_KEY --yes'`
-6. `make omniroute-status`
-7. `make dev`
+## 旅程
 
-### Compose
+### 1 · 准备
 
 ```bash
-docker compose --profile omniroute up -d
+make setup
 ```
 
-若后端也在 Compose 内运行，请将 `.env` 中 `BASE_URL` 设为 `http://omniroute:20128/v1`。
+### 2 · 启动网关
 
-## 其他厂商
+```bash
+make omniroute-up
+```
 
-`make onboard-models` 亦支持 Ollama、OpenAI、Gemini、LM Studio 与自定义 OpenAI 兼容端点。
+备选：`docker compose --profile omniroute up -d` · `npx -y omniroute`
 
-## 写入的环境变量
+### 3 · 连接 ChatDev
 
-| 变量 | 用途 |
-|----------|---------|
+交互：
+
+```bash
+make onboard-models
+```
+
+选择 **OmniRoute**。非交互：
+
+```bash
+make onboard-models ONBOARD_ARGS='--provider omniroute --yes'
+```
+
+### 4 · 用密钥解锁
+
+1. 打开控制台 → **Endpoints** → 创建 API Key  
+2. 写入（替换占位符；切勿提交真实密钥）：
+
+```bash
+make onboard-models ONBOARD_ARGS='--provider omniroute --api-key YOUR_KEY --yes'
+```
+
+### 5 · 验证
+
+```bash
+make omniroute-status
+```
+
+### 6 · 运行
+
+```bash
+make dev
+```
+
+---
+
+## Compose 说明
+
+若后端也在 Docker Compose 内运行，请指向服务名：
+
+`BASE_URL=http://omniroute:20128/v1`
+
+---
+
+## 其他路径
+
+同一命令，不同预设：Ollama · OpenAI · Gemini · LM Studio · 自定义 OpenAI 兼容端点。
+
+```bash
+make onboard-models
+```
+
+---
+
+## 写入内容
+
+| 变量 | 作用 |
+|------|------|
 | `BASE_URL` | Provider API 根地址（YAML 中 `${BASE_URL}`） |
 | `API_KEY` | 鉴权（`${API_KEY}`） |
 | `DEFAULT_MODEL` | 参考默认模型（YAML `model` 仍优先生效） |

@@ -1,47 +1,98 @@
-# Model onboarding (OmniRoute)
+# Model onboarding
 
-ChatDev agents call LLMs through OpenAI-compatible `BASE_URL` + `API_KEY` env vars. Model onboarding writes those values into `.env`.
+Agents talk to LLMs through OpenAI-compatible `BASE_URL` + `API_KEY`.  
+Onboarding writes those into `.env` so YAML can use `${BASE_URL}` / `${API_KEY}`.
 
-## Recommended: OmniRoute
+---
 
-[OmniRoute](https://github.com/diegosouzapw/OmniRoute) is a local AI gateway. ChatDev points at its `/v1` API; OmniRoute handles provider routing, free tiers, and fallbacks.
+## Path: OmniRoute first
 
-| Item | Value |
-|------|--------|
+[OmniRoute](https://github.com/diegosouzapw/OmniRoute) is the recommended local gateway: one `/v1` endpoint, multi-provider routing, free tiers, and fallbacks.
+
+| | |
+|---|---|
 | Dashboard | http://localhost:20128 |
-| API base | http://localhost:20128/v1 |
-| Suggested model | `auto` |
+| API | http://localhost:20128/v1 |
+| Model | `auto` |
 
-### Steps
+---
 
-1. Install project deps: `make setup`
-2. Start OmniRoute: `make omniroute-up`  
-   (or `docker compose --profile omniroute up -d`, or `npx -y omniroute`)
-3. Run onboarding: `make onboard-models` (choose OmniRoute)  
-   Non-interactive: `make onboard-models ONBOARD_ARGS='--provider omniroute --yes'`
-4. Open the dashboard → **Endpoints** → create an API key
-5. Save the key:  
-   `make onboard-models ONBOARD_ARGS='--provider omniroute --api-key YOUR_KEY --yes'`
-6. Verify: `make omniroute-status`
-7. Start ChatDev: `make dev`
+## Journey
 
-### Docker Compose
+### 1 · Prepare
 
 ```bash
-docker compose --profile omniroute up -d
+make setup
 ```
 
-If ChatDev backend also runs in Compose, set `BASE_URL=http://omniroute:20128/v1` in `.env`.
+### 2 · Start the gateway
 
-## Other providers
+```bash
+make omniroute-up
+```
 
-`make onboard-models` also offers Ollama, OpenAI, Gemini, LM Studio, and custom OpenAI-compatible endpoints.
+Alternates: `docker compose --profile omniroute up -d` · `npx -y omniroute`
 
-## Env vars written
+### 3 · Connect ChatDev
 
-| Variable | Purpose |
-|----------|---------|
-| `BASE_URL` | Provider API root (used as `${BASE_URL}` in YAML) |
-| `API_KEY` | Auth token (`${API_KEY}`) |
+Interactive:
+
+```bash
+make onboard-models
+```
+
+Choose **OmniRoute**. Non-interactive:
+
+```bash
+make onboard-models ONBOARD_ARGS='--provider omniroute --yes'
+```
+
+### 4 · Unlock with a key
+
+1. Open the dashboard → **Endpoints** → create an API key  
+2. Save it (replace the placeholder; never commit real keys):
+
+```bash
+make onboard-models ONBOARD_ARGS='--provider omniroute --api-key YOUR_KEY --yes'
+```
+
+### 5 · Verify
+
+```bash
+make omniroute-status
+```
+
+### 6 · Run
+
+```bash
+make dev
+```
+
+---
+
+## Compose note
+
+If ChatDev’s backend also runs in Docker Compose, point at the service name:
+
+`BASE_URL=http://omniroute:20128/v1`
+
+---
+
+## Other paths
+
+Same command, different presets: Ollama · OpenAI · Gemini · LM Studio · custom OpenAI-compatible.
+
+```bash
+make onboard-models
+```
+
+---
+
+## What gets written
+
+| Variable | Role |
+|----------|------|
+| `BASE_URL` | Provider API root (`${BASE_URL}` in YAML) |
+| `API_KEY` | Auth (`${API_KEY}`) |
 | `DEFAULT_MODEL` | Reference default (YAML `model` still wins) |
-| `MODEL_PROVIDER` | Which preset was applied (`omniroute`, `ollama`, …) |
+| `MODEL_PROVIDER` | Preset applied (`omniroute`, `ollama`, …) |

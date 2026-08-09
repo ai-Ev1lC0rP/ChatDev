@@ -1,3 +1,14 @@
+# ChatDev / DevAll — Docker Compose
+#
+# Default stack: backend + frontend
+# OmniRoute gateway (optional): docker compose --profile omniroute up -d
+#   Prefer Makefile: make omniroute-up | omniroute-status | omniroute-down
+#
+# Naming SoT for OmniRoute:
+#   service:          omniroute          (Compose DNS on the app network)
+#   container_name:   chatdev_omniroute  (host `docker` / make targets)
+#   volume name:      chatdev_omniroute_data
+
 services:
   backend:
     build:
@@ -35,9 +46,8 @@ services:
     restart: unless-stopped
 
   # Optional multi-provider AI gateway for model onboarding.
-  # Start with: docker compose --profile omniroute up -d
-  # Then: make onboard-models ONBOARD_ARGS='--provider omniroute --yes'
-  # Host dashboard: http://localhost:20128
+  # Lifecycle: make omniroute-up → onboard-models → omniroute-status → … → omniroute-down
+  # Host dashboard: http://localhost:${OMNIROUTE_PORT:-20128}
   omniroute:
     profiles: ["omniroute"]
     image: diegosouzapw/omniroute:latest
@@ -50,3 +60,4 @@ services:
 
 volumes:
   omniroute-data:
+    name: chatdev_omniroute_data

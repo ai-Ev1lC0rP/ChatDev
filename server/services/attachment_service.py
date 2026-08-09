@@ -78,6 +78,8 @@ class AttachmentService:
         ).strip()
         if not candidate or candidate in {".", ".."}:
             return "upload.bin"
+        # TODO(security): consider rejecting control chars / overly long names after
+        # basename normalisation (basename + null-strip already blocks traversal).
         return candidate
 
     async def save_upload_file(self, session_id: str, upload: UploadFile) -> AttachmentRecord:
