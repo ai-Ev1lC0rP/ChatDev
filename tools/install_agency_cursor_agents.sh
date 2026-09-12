@@ -4,10 +4,12 @@
 #
 # Convert msitarzewski/agency-agents definitions into Cursor-native subagents
 # (YAML frontmatter with name + description) and install them for immediate use.
+# Project core voices are Cason's personal Grok fleet (PERSONAL_FLEET_MAP.md).
+# New slugs not in upstream agency-agents are generated from fleet profiles.
 #
 # Default:
 #   - Full roster  → ~/.cursor/agents/          (user-wide Subagents UI)
-#   - Core team    → <repo>/.cursor/agents/     (project-scoped, higher priority)
+#   - Core team    → <repo>/.cursor/agents/     (project-scoped, personal fleet)
 #   - Manifest     → <repo>/agency-team/
 #
 # Usage:
@@ -31,6 +33,7 @@ DIVISIONS=(
 )
 
 # High-value ChatDev / DevAll core roster (entry = agents-orchestrator)
+# Voices are Cason's personal Grok fleet — see agency-team/PERSONAL_FLEET_MAP.md
 CORE_SLUGS=(
   agents-orchestrator
   product-manager
@@ -52,6 +55,18 @@ CORE_SLUGS=(
   evidence-collector
   accessibility-auditor
   git-workflow-master
+  tradbot
+  home-assistant-master
+  credit-card-max
+  signal
+)
+
+# Not in upstream agency-agents; generated from fleet profiles if source missing
+PERSONAL_FLEET_ONLY_SLUGS=(
+  tradbot
+  home-assistant-master
+  credit-card-max
+  signal
 )
 
 usage() {
@@ -106,6 +121,34 @@ EOF
   printf '%s\t%s\t%s\n' "$slug" "$name" "$(basename "$(dirname "$src")")"
 }
 
+is_personal_fleet_only() {
+  local slug="$1" s
+  for s in "${PERSONAL_FLEET_ONLY_SLUGS[@]}"; do
+    [[ "$s" == "$slug" ]] && return 0
+  done
+  return 1
+}
+
+write_personal_fleet_agent() {
+  local slug="$1" dest="$2"
+  local profile="$TEAM_DIR/personal-fleet/${slug}.md"
+  mkdir -p "$(dirname "$dest")"
+  if [[ -f "$profile" ]]; then
+    cp "$profile" "$dest"
+    return 0
+  fi
+  cat > "$dest" <<EOF
+---
+name: ${slug}
+description: Personal Grok fleet specialist (${slug}).
+---
+
+You are ${slug} on Cason Clark's personal Grok fleet.
+Prefer Signal for non-urgent noise. Never empty status theater.
+See agency-team/PERSONAL_FLEET_MAP.md.
+EOF
+}
+
 header() { printf '\n==> %s\n' "$*"; }
 
 header "Installing full Agency roster → $USER_AGENTS_DIR"
@@ -138,16 +181,34 @@ core_missing=()
 for slug in "${CORE_SLUGS[@]}"; do
   src="$USER_AGENTS_DIR/${slug}.md"
   dest="$PROJECT_AGENTS_DIR/${slug}.md"
-  if [[ ! -f "$src" ]]; then
-    core_missing+=("$slug")
+  # Keep committed personal-fleet remaps; do not overwrite with stock agency-agents.
+  if [[ -f "$dest" ]]; then
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      printf 'DRY would keep existing core %s\n' "$slug"
+    fi
+    incr core_ok
     continue
   fi
-  if [[ "$DRY_RUN" -eq 1 ]]; then
-    printf 'DRY would copy core %s\n' "$slug"
-  else
-    cp "$src" "$dest"
+  if [[ -f "$src" ]]; then
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      printf 'DRY would copy core %s\n' "$slug"
+    else
+      cp "$src" "$dest"
+    fi
+    incr core_ok
+    continue
   fi
-  incr core_ok
+  if is_personal_fleet_only "$slug"; then
+    if [[ "$DRY_RUN" -eq 1 ]]; then
+      printf 'DRY would generate personal-fleet core %s\n' "$slug"
+    else
+      write_personal_fleet_agent "$slug" "$dest"
+      printf 'generated personal-fleet core %s\n' "$slug"
+    fi
+    incr core_ok
+    continue
+  fi
+  core_missing+=("$slug")
 done
 
 header "Writing team manifest + topology → $TEAM_DIR"
@@ -156,122 +217,20 @@ if [[ "$DRY_RUN" -eq 0 ]]; then
     echo "# ChatDev / DevAll core Agency team (Cursor subagents)"
     echo "# Entry / orchestrator: agents-orchestrator"
     echo "# Names match .cursor/agents/<slug>.md and ~/.cursor/agents/<slug>.md"
+    echo "# Personal Grok fleet remap — see agency-team/PERSONAL_FLEET_MAP.md"
     echo
     for slug in "${CORE_SLUGS[@]}"; do
       printf '%s\n' "$slug"
     done
   } > "$TEAM_DIR/CORE_TEAM.txt"
 
-  cat > "$TEAM_DIR/TEAM.md" <<'EOF'
-# Agency Team (Cursor-native)
+  # TEAM.md / HANDOFFS.md / PERSONAL_FLEET_MAP.md are committed fleet docs — do not overwrite.
 
-Primary deliverable: **Cursor subagents** sourced from
-[`agency-agents`](https://github.com/msitarzewski/agency-agents)
-(`/Users/ev1lc0rp/Development/agency-agents` on this machine).
-
-## Why Cursor-native (not Agency Swarm first)
-
-Agency definitions are already Cursor-oriented (rules + personality markdown).
-Cursor subagents (`.cursor/agents/*.md` / `~/.cursor/agents/*.md`) show up in
-the Subagents UI and can be delegated via Task / `@agent` flows immediately.
-Agency Swarm remains a follow-up if you want a Python runtime agency with tools.
-
-## Install layout
-
-| Location | Purpose |
-|----------|---------|
-| `~/.cursor/agents/*.md` | Full roster (~232 agents), user-wide |
-| `.cursor/agents/*.md` | Core team (project, higher priority) |
-| `agency-team/` | Topology, catalog, reinstall script docs |
-| `yaml_instance/agency_core_team.yaml` | Web Console twin of the core pipeline |
-
-Reinstall / refresh from source:
-
-```bash
-make install-agency-agents
-```
-
-## Team topology (CEO / orchestrator pattern)
-
-```text
-                    ┌─────────────────────────┐
-                    │   agents-orchestrator   │  ← entry / pipeline lead
-                    └───────────┬─────────────┘
-            ┌───────────────────┼───────────────────┐
-            ▼                   ▼                   ▼
-   senior-project-manager   product-manager   project-shepherd
-            │                   │                   │
-            └─────────┬─────────┴─────────┬─────────┘
-                      ▼                   ▼
-              software-architect     ux-architect
-                      │                   │
-         ┌────────────┼────────────┐      │
-         ▼            ▼            ▼      ▼
- frontend-dev   backend-arch   prompt-eng  workflow-architect
-         │            │            │              │
-         └────────────┴─────┬──────┴──────────────┘
-                            ▼
-         devops-automator / ai-engineer / git-workflow-master
-                            │
-              ┌─────────────┼─────────────┐
-              ▼             ▼             ▼
-         api-tester   evidence-collector  code-reviewer
-                            │
-              ┌─────────────┼─────────────┐
-              ▼             ▼             ▼
-     accessibility-auditor  technical-writer  reality-checker
-```
-
-Handoff table: `agency-team/HANDOFFS.md`. Orchestrator slug map is appended
-from `agency-team/ORCHESTRATOR_OVERLAY.md` on each install.
-
-### Communication flows (directional)
-
-- **agents-orchestrator** → all core roles (can spawn / hand off)
-- **senior-project-manager** → product-manager, project-shepherd, software-architect
-- **product-manager** → software-architect, ux-architect, prompt-engineer, workflow-architect
-- **software-architect** → frontend-developer, backend-architect, devops-automator, ai-engineer
-- **frontend-developer / backend-architect** → api-tester, evidence-collector, code-reviewer
-- **api-tester / evidence-collector / code-reviewer** → reality-checker (final gate)
-- **multi-agent-systems-architect** — consult when the pipeline itself is the product
-- Specialists report findings back to **agents-orchestrator**
-
-## How to use
-
-1. Open Cursor → Subagents (or Agent / Task picker).
-2. Select a core agent (e.g. `agents-orchestrator`) or ask the main agent to
-   delegate: “Use the agents-orchestrator subagent to run the pipeline for …”
-3. Web Console: run workflow `agency_core_team` (`yaml_instance/agency_core_team.yaml`).
-4. For one-off specialists outside the core set, pick from the full user-level
-   roster in `~/.cursor/agents/` (see `CATALOG.tsv`).
-
-## Official agency-agents Cursor rules (optional)
-
-Upstream also installs `.mdc` rules via:
-
-```bash
-cd /path/to/ChatDev
-~/Development/agency-agents/scripts/install.sh --tool cursor --no-interactive
-```
-
-Prefer native subagents for team orchestration; use rules only if you want
-`@slug` rule mentions without Subagents isolation.
-
-## Follow-up: Agency Swarm
-
-Mirror roles under an `agency_swarm` agency folder later if you need tool-backed
-Python agents (`BaseTool`, `agency.py`). Source lives at
-`~/Development/agency-swarm`. Not required for IDE team use.
-
-## What’s left / next enablements
-
-- No API keys required for Cursor subagent prompts themselves.
-- Web Console workflow needs onboarded `${BASE_URL}` / `${API_KEY}` / `${DEFAULT_MODEL}`.
-- Optional: run upstream rules install if you want `@slug` rule mentions:
-  `~/Development/agency-agents/scripts/install.sh --tool cursor --no-interactive`
-- Refresh after upstream agency-agents pulls:
-  `make install-agency-agents`
-EOF
+  for slug in "${PERSONAL_FLEET_ONLY_SLUGS[@]}"; do
+    if ! grep -q "^${slug}"$'\t' "$CATALOG" 2>/dev/null; then
+      printf '%s\t%s\t%s\n' "$slug" "$slug" "personal-fleet" >> "$CATALOG"
+    fi
+  done
 
   # Available-but-not-core listing
   {
@@ -319,7 +278,7 @@ if [[ ${#core_missing[@]} -gt 0 ]]; then
 fi
 
 # Smoke-check frontmatter on a few files
-for slug in agents-orchestrator frontend-developer api-tester evidence-collector; do
+for slug in agents-orchestrator frontend-developer api-tester evidence-collector tradbot signal; do
   f="$PROJECT_AGENTS_DIR/${slug}.md"
   head -1 "$f" | grep -q '^---$' || { echo "bad frontmatter: $f" >&2; exit 1; }
   grep -q "^name: ${slug}$" "$f" || { echo "bad name field: $f" >&2; exit 1; }
