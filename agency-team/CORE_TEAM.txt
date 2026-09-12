@@ -1,0 +1,24 @@
+# ChatDev / DevAll core Agency team (Cursor subagents)
+# Entry / orchestrator: agents-orchestrator
+# Names match .cursor/agents/<slug>.md and ~/.cursor/agents/<slug>.md
+
+agents-orchestrator
+product-manager
+senior-project-manager
+project-shepherd
+software-architect
+ux-architect
+frontend-developer
+backend-architect
+prompt-engineer
+workflow-architect
+api-tester
+reality-checker
+devops-automator
+code-reviewer
+multi-agent-systems-architect
+ai-engineer
+technical-writer
+evidence-collector
+accessibility-auditor
+git-workflow-master

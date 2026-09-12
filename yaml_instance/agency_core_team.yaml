@@ -1,0 +1,270 @@
+version: 0.0.0
+graph:
+  id: agency_core_team
+  description: Cursor Agency core team as a DevAll pipeline — orchestrator through architecture, implementation, QA, and a skeptical final gate.
+  log_level: INFO
+  is_majority_voting: false
+  initial_instruction: Describe the product or change you want the Agency core team to plan, build, and certify.
+  start:
+    - USER
+  end:
+    - FINAL
+  nodes:
+    - id: USER
+      type: passthrough
+      description: User task entry
+      context_window: 0
+      config: {}
+    - id: FINAL
+      type: passthrough
+      description: Pipeline exit
+      context_window: 0
+      config: {}
+    - id: agents-orchestrator
+      type: agent
+      description: Pipeline lead
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling: []
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are agents-orchestrator for ChatDev / DevAll.
+          Break the user task into a pipeline plan with owners using these exact slugs:
+          senior-project-manager, product-manager, software-architect, frontend-developer,
+          backend-architect, api-tester, evidence-collector, code-reviewer, reality-checker.
+          Quote requirements; do not invent luxury scope. Hand off a single brief the rest of the team can execute.
+          Output: goal, non-goals, ordered tasks, who owns each, definition of done.
+    - id: senior-project-manager
+      type: agent
+      description: Spec to tasks
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling: []
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are senior-project-manager. Convert the orchestrator brief into a numbered task list.
+          Quote exact requirements from the user/orchestrator. Do not add features that were not asked for.
+          No background processes. Each task is independently testable.
+          Output markdown tasks with owner hints (frontend-developer / backend-architect / others).
+    - id: product-manager
+      type: agent
+      description: Problem and success metrics
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling: []
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are product-manager. Lead with the user problem, not a solution.
+          From the task list, state success metrics, non-goals, and the smallest shippable outcome.
+          Call out scope creep. Do not write code.
+    - id: software-architect
+      type: agent
+      description: System design
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling: []
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are software-architect for ChatDev 2.0 (DevAll).
+          Design the smallest architecture that fits the tasks. Prefer YAML workflows, existing nodes, and ${BASE_URL}/${API_KEY} placeholders.
+          Do not revive ChatDev 1.0 CompanyConfig. Name trade-offs. Split frontend vs backend work clearly for the next agents.
+    - id: frontend-developer
+      type: agent
+      description: UI implementation
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: file:All
+                - name: code_executor:All
+                - name: uv_related:All
+              timeout: null
+            prefix: ''
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are frontend-developer (Vue 3 + Vite in this repo).
+          Implement only the UI/UX tasks from the architect and PM.
+          Preserve reverse-proxy hosts and VITE_HMR_CLIENT_PORT behavior. Do not touch upload/session_id sanitizers.
+          Output what you changed and how a human can verify it in the Web Console.
+    - id: backend-architect
+      type: agent
+      description: Server and API
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: file:All
+                - name: code_executor:All
+                - name: uv_related:All
+              timeout: null
+            prefix: ''
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are backend-architect.
+          Implement only server/API/workflow tasks. Keep basename-only upload sanitization and opaque session_id validation.
+          Prefer standard nodes over ad-hoc Code nodes. YAML must keep ${BASE_URL} / ${API_KEY}.
+          Output endpoints/behavior changed and how to test them.
+    - id: api-tester
+      type: agent
+      description: API validation
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: file:All
+                - name: code_executor:All
+              timeout: null
+            prefix: ''
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are api-tester. Validate frontend and backend claims against actual interfaces.
+          List concrete checks (happy path, auth/error, contract). Do not invent passing results — mark unrun checks as unrun.
+    - id: evidence-collector
+      type: agent
+      description: Evidence QA
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling: []
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are evidence-collector (EvidenceQA). Default to finding 3–5 issues.
+          Require proof for every pass. If you cannot see the UI or run the API, say so and fail those claims.
+    - id: code-reviewer
+      type: agent
+      description: Code review
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling:
+          - type: function
+            config:
+              tools:
+                - name: file:All
+              timeout: null
+            prefix: ''
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are code-reviewer. Review correctness, security, maintainability, performance — not style.
+          Be specific (file + issue + why). Flag secrets, hardcoded keys, and session_id/path unsafety.
+    - id: reality-checker
+      type: agent
+      description: Final gate
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling: []
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are reality-checker. Default verdict is NEEDS WORK.
+          Production-ready only with overwhelming evidence from api-tester, evidence-collector, and code-reviewer.
+          Summarize for the user: verdict, blockers, what was actually proven vs claimed.
+  edges:
+    - from: USER
+      to: agents-orchestrator
+    - from: agents-orchestrator
+      to: senior-project-manager
+    - from: senior-project-manager
+      to: product-manager
+    - from: product-manager
+      to: software-architect
+    - from: software-architect
+      to: frontend-developer
+    - from: software-architect
+      to: backend-architect
+    - from: frontend-developer
+      to: api-tester
+    - from: backend-architect
+      to: api-tester
+    - from: api-tester
+      to: evidence-collector
+    - from: evidence-collector
+      to: code-reviewer
+    - from: code-reviewer
+      to: reality-checker
+    - from: reality-checker
+      to: FINAL
+vars: {}

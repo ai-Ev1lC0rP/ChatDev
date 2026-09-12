@@ -27,6 +27,8 @@ frontend/.vscode/
 .cursor/**
 !.cursor/rules/
 !.cursor/rules/**
+!.cursor/agents/
+!.cursor/agents/**
 *.swp
 *.swo
 

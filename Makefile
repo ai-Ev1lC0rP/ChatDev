@@ -129,6 +129,10 @@ sync-upstream: ## Fetch and merge latest upstream/main into the current branch
 	@git merge $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH)
 	@echo "Merged $(UPSTREAM_REMOTE)/$(UPSTREAM_BRANCH) into $$(git branch --show-current)"
 
+.PHONY: install-agency-agents
+install-agency-agents: ## Install Cursor subagents from agency-agents (full roster + core team)
+	@./tools/install_agency_cursor_agents.sh
+
 .PHONY: check
 check: ## Run YAML validation + focused security/unit tests
 	@$(MAKE) validate-yamls
@@ -136,7 +140,8 @@ check: ## Run YAML validation + focused security/unit tests
 	for t in \
 		tests/test_attachment_upload_filename.py \
 		tests/test_session_id_safety.py \
-		tests/test_onboard_models.py; do \
+		tests/test_onboard_models.py \
+		tests/test_agency_cursor_agents.py; do \
 		if [ -f "$$t" ]; then tests="$$tests $$t"; fi; \
 	done; \
 	if [ -z "$$tests" ]; then \
