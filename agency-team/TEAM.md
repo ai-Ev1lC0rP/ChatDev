@@ -1,12 +1,12 @@
-# Agency Team (Cursor-native)
+# Agency Team (Cursor-native, personal Grok fleet)
 
-Primary deliverable: **Cursor subagents** sourced from
-[`agency-agents`](https://github.com/msitarzewski/agency-agents)
-(`/Users/ev1lc0rp/Development/agency-agents` on this machine).
+Primary deliverable: **Cursor subagents** remapped onto Cason Clark's personal
+Grok bots. Stock [agency-agents](https://github.com/msitarzewski/agency-agents)
+is still the install source for the full user-wide roster; **project core**
+voices come from this fleet. Map: `agency-team/PERSONAL_FLEET_MAP.md`.
 
 ## Why Cursor-native (not Agency Swarm first)
 
-Agency definitions are already Cursor-oriented (rules + personality markdown).
 Cursor subagents (`.cursor/agents/*.md` / `~/.cursor/agents/*.md`) show up in
 the Subagents UI and can be delegated via Task / `@agent` flows immediately.
 Agency Swarm remains a follow-up if you want a Python runtime agency with tools.
@@ -16,8 +16,8 @@ Agency Swarm remains a follow-up if you want a Python runtime agency with tools.
 | Location | Purpose |
 |----------|---------|
 | `~/.cursor/agents/*.md` | Full roster (~232 agents), user-wide |
-| `.cursor/agents/*.md` | Core team (project, higher priority) |
-| `agency-team/` | Topology, catalog, reinstall script docs |
+| `.cursor/agents/*.md` | Core team (project, personal fleet remap) |
+| `agency-team/` | Topology, catalog, fleet map, reinstall docs |
 | `yaml_instance/agency_core_team.yaml` | Web Console twin of the core pipeline |
 
 Reinstall / refresh from source:
@@ -26,11 +26,15 @@ Reinstall / refresh from source:
 make install-agency-agents
 ```
 
+New slugs (`tradbot`, `home-assistant-master`, `credit-card-max`, `signal`)
+are not in upstream agency-agents. The installer generates them from the
+fleet profiles and does not fail if that upstream source is missing.
+
 ## Team topology (CEO / orchestrator pattern)
 
 ```text
                     ┌─────────────────────────┐
-                    │   agents-orchestrator   │  ← entry / pipeline lead
+                    │   agents-orchestrator   │  ← ChatDev / pipeline lead
                     └───────────┬─────────────┘
             ┌───────────────────┼───────────────────┐
             ▼                   ▼                   ▼
@@ -55,6 +59,9 @@ make install-agency-agents
               ┌─────────────┼─────────────┐
               ▼             ▼             ▼
      accessibility-auditor  technical-writer  reality-checker
+
+   Optional specialist branches (orchestrator only when the job matches):
+     tradbot  |  home-assistant-master  |  credit-card-max  →  signal
 ```
 
 Handoff table: `agency-team/HANDOFFS.md`. Orchestrator slug map is appended
@@ -68,6 +75,7 @@ from `agency-team/ORCHESTRATOR_OVERLAY.md` on each install.
 - **software-architect** → frontend-developer, backend-architect, devops-automator, ai-engineer
 - **frontend-developer / backend-architect** → api-tester, evidence-collector, code-reviewer
 - **api-tester / evidence-collector / code-reviewer** → reality-checker (final gate)
+- **tradbot / home-assistant-master / credit-card-max** → signal (FYIs only; not on the software path)
 - **multi-agent-systems-architect** — consult when the pipeline itself is the product
 - Specialists report findings back to **agents-orchestrator**
 
@@ -79,6 +87,7 @@ from `agency-team/ORCHESTRATOR_OVERLAY.md` on each install.
 3. Web Console: run workflow `agency_core_team` (`yaml_instance/agency_core_team.yaml`).
 4. For one-off specialists outside the core set, pick from the full user-level
    roster in `~/.cursor/agents/` (see `CATALOG.tsv`).
+5. Soft FYIs go to `signal`. Never empty status theater.
 
 ## Official agency-agents Cursor rules (optional)
 
@@ -102,6 +111,7 @@ Python agents (`BaseTool`, `agency.py`). Source lives at
 
 - No API keys required for Cursor subagent prompts themselves.
 - Web Console workflow needs onboarded `${BASE_URL}` / `${API_KEY}` / `${DEFAULT_MODEL}`.
+- Prefer OmniRoute (`make onboard-models` / `make omniroute-up`) for model setup.
 - Optional: run upstream rules install if you want `@slug` rule mentions:
   `~/Development/agency-agents/scripts/install.sh --tool cursor --no-interactive`
 - Refresh after upstream agency-agents pulls:

@@ -1,6 +1,7 @@
 # ChatDev / DevAll core Agency team (Cursor subagents)
 # Entry / orchestrator: agents-orchestrator
 # Names match .cursor/agents/<slug>.md and ~/.cursor/agents/<slug>.md
+# Personal Grok fleet remap — see agency-team/PERSONAL_FLEET_MAP.md
 
 agents-orchestrator
 product-manager
@@ -22,3 +23,7 @@ technical-writer
 evidence-collector
 accessibility-auditor
 git-workflow-master
+tradbot
+home-assistant-master
+credit-card-max
+signal

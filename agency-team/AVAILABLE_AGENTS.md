@@ -268,3 +268,7 @@
 - test-results-analyzer (Test Results Analyzer / testing)
 - tool-evaluator (Tool Evaluator / testing)
 - workflow-optimizer (Workflow Optimizer / testing)
+- tradbot (Tradbot / personal-fleet) [CORE]
+- home-assistant-master (Home Assistant Master / personal-fleet) [CORE]
+- credit-card-max (Credit Card Max / personal-fleet) [CORE]
+- signal (Signal / personal-fleet) [CORE]

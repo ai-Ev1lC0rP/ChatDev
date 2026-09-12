@@ -1,7 +1,7 @@
 version: 0.0.0
 graph:
   id: agency_core_team
-  description: Cursor Agency core team as a DevAll pipeline — orchestrator through architecture, implementation, QA, and a skeptical final gate.
+  description: Personal Grok fleet core team as a DevAll pipeline — ChatDev orchestrator through MissFortune/Mobile Designer seats, optional Tradbot/HA/card branches, Signal digest, and a skeptical final gate.
   log_level: INFO
   is_majority_voting: false
   initial_instruction: Describe the product or change you want the Agency core team to plan, build, and certify.
@@ -36,12 +36,19 @@ graph:
         memories: []
         retry: null
         role: |-
-          You are agents-orchestrator for ChatDev / DevAll.
+          You are ChatDev (agents-orchestrator) on this DevAll fork. Short, plain, eng-tight.
           Break the user task into a pipeline plan with owners using these exact slugs:
-          senior-project-manager, product-manager, software-architect, frontend-developer,
-          backend-architect, api-tester, evidence-collector, code-reviewer, reality-checker.
-          Quote requirements; do not invent luxury scope. Hand off a single brief the rest of the team can execute.
+          agents-orchestrator, product-manager, senior-project-manager, project-shepherd,
+          software-architect, ux-architect, frontend-developer, backend-architect,
+          prompt-engineer, workflow-architect, api-tester, reality-checker,
+          devops-automator, code-reviewer, multi-agent-systems-architect, ai-engineer,
+          technical-writer, evidence-collector, accessibility-auditor, git-workflow-master,
+          tradbot, home-assistant-master, credit-card-max, signal.
+          Quote requirements; do not invent luxury scope. Never skip QA gates.
+          Spawn tradbot / home-assistant-master / credit-card-max only when the job is theirs.
+          Soft FYIs via signal. Not email/calendar, not HA, not card advice.
           Output: goal, non-goals, ordered tasks, who owns each, definition of done.
+          Keep ${BASE_URL} / ${API_KEY} / ${DEFAULT_MODEL}. Prefer OmniRoute. No code dumps.
     - id: senior-project-manager
       type: agent
       description: Spec to tasks
@@ -58,10 +65,11 @@ graph:
         memories: []
         retry: null
         role: |-
-          You are senior-project-manager. Convert the orchestrator brief into a numbered task list.
-          Quote exact requirements from the user/orchestrator. Do not add features that were not asked for.
-          No background processes. Each task is independently testable.
-          Output markdown tasks with owner hints (frontend-developer / backend-architect / others).
+          You are MissFortune as senior-project-manager. Convert the orchestrator brief into a numbered task list.
+          Quote exact requirements. Do not add features that were not asked for. No progress theater.
+          No background processes. Each task is independently testable. Prefer gh as ai-Ev1lC0rP. Ship when green.
+          Soft FYIs via signal. Ping Cason only for hard deadlines, broken CI, or money/safety.
+          Output markdown tasks with owner hints (frontend-developer / backend-architect / tradbot / others only when theirs).
     - id: product-manager
       type: agent
       description: Problem and success metrics
@@ -78,9 +86,9 @@ graph:
         memories: []
         retry: null
         role: |-
-          You are product-manager. Lead with the user problem, not a solution.
-          From the task list, state success metrics, non-goals, and the smallest shippable outcome.
-          Call out scope creep. Do not write code.
+          You are MissFortune as product-manager. Lead with the user problem, not a solution.
+          State success metrics, non-goals, and the smallest shippable outcome. Ship when green.
+          Call out scope creep. Do not write code. Quiet FYIs via signal. No progress theater.
     - id: software-architect
       type: agent
       description: System design
@@ -97,9 +105,10 @@ graph:
         memories: []
         retry: null
         role: |-
-          You are software-architect for ChatDev 2.0 (DevAll).
-          Design the smallest architecture that fits the tasks. Prefer YAML workflows, existing nodes, and ${BASE_URL}/${API_KEY} placeholders.
-          Do not revive ChatDev 1.0 CompanyConfig. Name trade-offs. Split frontend vs backend work clearly for the next agents.
+          You are MissFortune as software-architect for ChatDev 2.0 (DevAll).
+          Design the smallest architecture that fits the tasks. Prefer YAML workflows, existing nodes, and ${BASE_URL}/${API_KEY}/${DEFAULT_MODEL} placeholders.
+          Do not revive ChatDev 1.0 CompanyConfig. Name trade-offs. Split frontend vs backend work clearly.
+          Ship when green. Soft FYIs via signal. No progress theater.
     - id: frontend-developer
       type: agent
       description: UI implementation
@@ -124,10 +133,10 @@ graph:
         memories: []
         retry: null
         role: |-
-          You are frontend-developer (Vue 3 + Vite in this repo).
+          You are Mobile Designer as frontend-developer (Vue 3 + Vite in this repo; iOS/mobile craft).
           Implement only the UI/UX tasks from the architect and PM.
           Preserve reverse-proxy hosts and VITE_HMR_CLIENT_PORT behavior. Do not touch upload/session_id sanitizers.
-          Output what you changed and how a human can verify it in the Web Console.
+          Output what you changed and how a human can verify it. Soft FYIs via signal.
     - id: backend-architect
       type: agent
       description: Server and API
@@ -152,10 +161,10 @@ graph:
         memories: []
         retry: null
         role: |-
-          You are backend-architect.
+          You are MissFortune as backend-architect.
           Implement only server/API/workflow tasks. Keep basename-only upload sanitization and opaque session_id validation.
-          Prefer standard nodes over ad-hoc Code nodes. YAML must keep ${BASE_URL} / ${API_KEY}.
-          Output endpoints/behavior changed and how to test them.
+          Prefer standard nodes over ad-hoc Code nodes. YAML must keep ${BASE_URL} / ${API_KEY} / ${DEFAULT_MODEL}.
+          Ship when green. Soft FYIs via signal. Output endpoints/behavior changed and how to test them.
     - id: api-tester
       type: agent
       description: API validation
@@ -179,8 +188,9 @@ graph:
         memories: []
         retry: null
         role: |-
-          You are api-tester. Validate frontend and backend claims against actual interfaces.
+          You are MissFortune as api-tester. Validate frontend and backend claims against actual interfaces.
           List concrete checks (happy path, auth/error, contract). Do not invent passing results — mark unrun checks as unrun.
+          Ship when green. Soft FYIs via signal.
     - id: evidence-collector
       type: agent
       description: Evidence QA
@@ -197,8 +207,9 @@ graph:
         memories: []
         retry: null
         role: |-
-          You are evidence-collector (EvidenceQA). Default to finding 3–5 issues.
+          You are Mobile Designer as evidence-collector. Default to finding 3–5 issues.
           Require proof for every pass. If you cannot see the UI or run the API, say so and fail those claims.
+          Soft FYIs via signal.
     - id: code-reviewer
       type: agent
       description: Code review
@@ -221,8 +232,9 @@ graph:
         memories: []
         retry: null
         role: |-
-          You are code-reviewer. Review correctness, security, maintainability, performance — not style.
+          You are MissFortune as code-reviewer. Review correctness, security, maintainability, performance — not style.
           Be specific (file + issue + why). Flag secrets, hardcoded keys, and session_id/path unsafety.
+          No progress theater. Soft FYIs via signal. Prefer gh as ai-Ev1lC0rP.
     - id: reality-checker
       type: agent
       description: Final gate
@@ -239,9 +251,91 @@ graph:
         memories: []
         retry: null
         role: |-
-          You are reality-checker. Default verdict is NEEDS WORK.
+          You are MissFortune as reality-checker. Default verdict is NEEDS WORK.
           Production-ready only with overwhelming evidence from api-tester, evidence-collector, and code-reviewer.
-          Summarize for the user: verdict, blockers, what was actually proven vs claimed.
+          No fantasy pass. Summarize: verdict, blockers, what was actually proven vs claimed.
+          Soft FYIs via signal. Ping Cason only for money/safety ship calls.
+    - id: tradbot
+      type: agent
+      description: Email calendar RSVPs draft only
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling: []
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are Tradbot. Watch personal email/calendar — school forms, bills, RSVPs.
+          Draft replies. Never send without ask. Batch FYIs to signal.
+          Ping Cason only for hard deadlines today / money / safety.
+          Anti-jobs: not Home Assistant, not card advice, not ChatDev eng.
+          If this task is software, say so and stop.
+    - id: home-assistant-master
+      type: agent
+      description: ha.casonclark.com config
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling: []
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are Home Assistant Master for ha.casonclark.com — config, automations, dashboards.
+          Soft FYIs to signal. Ping Cason only for safety, outages, or hard deadlines.
+          Anti-jobs: do not expand into email, calendar, or eng work.
+          If this task is software or email, say so and stop.
+    - id: credit-card-max
+      type: agent
+      description: Card points benefit risk
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling: []
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are Credit Card Max. Which card for a purchase; unused benefits; misrouted charges; monthly utilization.
+          Soft tips to signal. Ping Cason only for money risk.
+          Anti-jobs: do not place charges or change cards without explicit ask. Not email, not HA, not eng.
+          If this task is software, say so and stop.
+    - id: signal
+      type: agent
+      description: Fleet noise consolidator
+      context_window: -1
+      log_output: true
+      config:
+        name: ${DEFAULT_MODEL}
+        provider: openai
+        base_url: ${BASE_URL}
+        api_key: ${API_KEY}
+        params: {}
+        tooling: []
+        thinking: null
+        memories: []
+        retry: null
+        role: |-
+          You are Signal. One quiet fleet digest thread. Absorb FYIs. Weekday morning digest or silence.
+          Interrupt only for hard deadlines / money / safety. Never empty status.
+          Anti-jobs: do not do other bots' work; do not fan out; do not post on outside platforms.
+          If there is nothing to digest, stay silent — do not write "all clear".
   edges:
     - from: USER
       to: agents-orchestrator
@@ -266,5 +360,69 @@ graph:
     - from: code-reviewer
       to: reality-checker
     - from: reality-checker
+      to: FINAL
+    - from: agents-orchestrator
+      to: tradbot
+      trigger: true
+      condition:
+        type: keyword
+        config:
+          any:
+            - email
+            - calendar
+            - RSVP
+            - school form
+            - bill
+          none: []
+          regex: []
+          case_sensitive: false
+    - from: agents-orchestrator
+      to: home-assistant-master
+      trigger: true
+      condition:
+        type: keyword
+        config:
+          any:
+            - home assistant
+            - ha.casonclark
+            - homeassistant
+            - hass.io
+          none: []
+          regex: []
+          case_sensitive: false
+    - from: agents-orchestrator
+      to: credit-card-max
+      trigger: true
+      condition:
+        type: keyword
+        config:
+          any:
+            - credit card
+            - points
+            - utilization
+            - unused benefit
+          none: []
+          regex: []
+          case_sensitive: false
+    - from: agents-orchestrator
+      to: signal
+      trigger: true
+      condition:
+        type: keyword
+        config:
+          any:
+            - digest
+            - FYI
+            - fleet
+          none: []
+          regex: []
+          case_sensitive: false
+    - from: tradbot
+      to: signal
+    - from: home-assistant-master
+      to: signal
+    - from: credit-card-max
+      to: signal
+    - from: signal
       to: FINAL
 vars: {}
